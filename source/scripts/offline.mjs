@@ -19,7 +19,7 @@ let css=result.outputFiles.find(f=>f.path.endsWith(".css")).text;
 for(const [name,url] of Object.entries(assets))css=css.replaceAll(name,url);
 await writeFile(output,`<!doctype html>
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><title>Liang Ping | Atelier Onde</title>
+<meta name="color-scheme" content="light"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f4f4ee'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='serif' font-size='31' fill='%23222625'%3ELP%3C/text%3E%3C/svg%3E"><title>Liang Ping | Atelier Onde</title>
 <style>${css}</style></head><body><div id="edition"></div><noscript>请开启 JavaScript 查看本季作品。</noscript>
 <script>globalThis.__ONDE_ASSETS__=${JSON.stringify(assets)};</script><script>${js}</script></body></html>`);
 console.log(`Offline edition: ${output} (${paths.length} embedded images)`);
