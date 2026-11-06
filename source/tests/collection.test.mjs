@@ -17,9 +17,10 @@ test("five works are split across two meaningful, non-overlapping chapters", () 
   assert.equal(findPiece("missing"), undefined);
 });
 
-test("the collection title is Liang Ping in the landing page and drawer", () => {
+test("Liang Ping is the brand and the exhibition heading is an action", () => {
   const source = readFileSync(resolve("src/components/sites/onde/Experience.tsx"), "utf8");
   const gallery = readFileSync(resolve("src/components/sites/onde/Gallery.tsx"), "utf8");
-  assert.match(gallery, /<h1>Liang Ping<\/h1>/);
+  assert.match(source, /返回章节".*?>Liang Ping<\/button>/);
+  assert.match(gallery, /探索作品/);
   assert.match(source, /className="drawer-title">Liang Ping<\/div>/);
 });

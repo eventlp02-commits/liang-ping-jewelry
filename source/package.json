@@ -33,12 +33,15 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "offline": "node scripts/offline.mjs",
+    "publish:build": "node scripts/offline.mjs ../index.html --web",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "node tests/experience.browser.mjs",
+    "test:quiet": "node tests/quiet.browser.mjs",
     "check": "npm run lint && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
+    "@panzoom/panzoom": "^4.6.2",
     "@types/three": "^0.187.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

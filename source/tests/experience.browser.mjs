@@ -36,7 +36,7 @@ try{
     await page.waitForFunction(()=>[...document.querySelectorAll(".specimen img")].length===5 &&
       [...document.querySelectorAll(".specimen img")].every(img=>img.complete&&img.naturalWidth));
     const delta=await checkCanvas(page,width,height);
-    assert.equal(await page.getByRole("heading",{name:"Liang Ping"}).count(),1);
+    assert.equal(await page.getByRole("heading",{name:"探索作品"}).count(),1);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     assert.equal(await page.evaluate(()=>{
       const title=document.querySelector(".landing-title").getBoundingClientRect();
@@ -64,7 +64,7 @@ try{
     const station=page.getByRole("button",{name:"II · 纸上习作"});await station.click();
     await page.waitForFunction(()=>Number(document.querySelector("[data-printed]")?.style.getPropertyValue("--proof-alpha"))>.97);
     await capture(page,`${name}-print`);
-    await page.getByRole("button",{name:"III · 局部与作品手记"}).click();
+    await page.getByRole("button",{name:"III · 局部特写"}).click();
     await page.waitForFunction(()=>Number(document.querySelector("[data-printed]")?.style.getPropertyValue("--words-alpha"))>.99);
     await capture(page,`${name}-macro`);
     await page.getByRole("button",{name:"I · 原作摄影"}).click();await page.waitForFunction(()=>scrollY<5);
@@ -81,8 +81,10 @@ try{
     await page.waitForURL(/#signal$/);await settled(page);
     await page.goBack();await page.waitForURL(/#chapter-2$/);await settled(page);
     assert.equal(await page.locator('.chapter-switch [aria-current=true]').innerText(),"II");
-    await page.getByRole("button",{name:"开启声音"}).click();
-    assert.equal(await page.getByRole("button",{name:"关闭声音"}).getAttribute("aria-pressed"),"true");
+    await page.getByRole("button",{name:"暂停音乐"}).click();
+    await page.getByRole("button",{name:"播放音乐"}).click();
+    await page.waitForFunction(()=>!document.querySelector("audio").paused);
+    assert.equal(await page.getByRole("button",{name:"暂停音乐"}).getAttribute("aria-pressed"),"true");
     await page.close();console.log(`${name}: image load, navigation, scroll, history, sound; cloth changed ${delta} of sampled channels`);
   }
   const page=await browser.newPage({reducedMotion:"reduce",viewport:{width:360,height:640}});watch(page);

@@ -1,9 +1,11 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, type CSSProperties } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { Image as ImageIcon, Paintbrush, ScanSearch, Maximize2, ChevronDown } from "lucide-react";
 import type { Piece } from "./content.mjs";
 import { pullMaterialPlate, type Pigments } from "./materialPlate";
 import styles from "./MaterialStudy.module.css";
+import { DetailViewer } from "./DetailViewer";
 
 type Point = readonly [number, number];
 type Study = {
@@ -54,9 +56,9 @@ const step = (a: number, b: number, n: number) => {
   return t * t * (3 - 2 * t);
 };
 const score = [
-  { at: 0, roman: "I", name: "Photographie", label: "原作摄影" },
-  { at: 0.51, roman: "II", name: "Étude", label: "纸上习作" },
-  { at: 0.96, roman: "III", name: "Détail", label: "局部与作品手记" },
+  { at: 0, roman: "I", icon: ImageIcon, label: "原作摄影" },
+  { at: 0.51, roman: "II", icon: Paintbrush, label: "纸上习作" },
+  { at: 0.96, roman: "III", icon: ScanSearch, label: "局部特写" },
 ];
 const staticQuery = "(prefers-reduced-motion: reduce), (max-height: 460px)";
 
@@ -70,8 +72,10 @@ function StudyOpening({ piece }: { piece: Piece }) {
   const image = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const nav = useRef<HTMLElement>(null);
+  const range = useRef<HTMLInputElement>(null);
+  const [inspecting,setInspecting]=useState<number|null>(null);
   const titleId = useId();
-  const study = studies[piece.id] ?? studies.lacune;
+  const study = studies[piece.id];
 
   useLayoutEffect(() => {
     const section = root.current, stage = pin.current, photo = image.current;
@@ -106,8 +110,8 @@ function StudyOpening({ piece }: { piece: Piece }) {
           const pw = photo.naturalWidth * ratio, ph = photo.naturalHeight * ratio;
           const fx = mix(study.subject[0], study.macro[0], sweep);
           const fy = mix(study.subject[1], study.macro[1], sweep);
-          const targetX = mix(tight ? 0.53 : 0.56, tight ? 0.54 : 0.71, sweep);
-          const targetY = mix(tight ? 0.43 : 0.49, tight ? 0.36 : study === studies.pulse ? 0.38 : 0.46, sweep);
+          const targetX = mix(.51,.5,sweep);
+          const targetY = mix(tight ? .44 : .5,.46,sweep);
           const x = clamp(w * targetX - pw * fx, w - pw, 0);
           const y = clamp(h * targetY - ph * fy, h - ph, 0);
           // Keep both surfaces in exact register; only their common matrix moves.
@@ -122,8 +126,12 @@ function StudyOpening({ piece }: { piece: Piece }) {
         stage.style.setProperty("--proof-alpha", `${step(0.28, 0.44, p) * (1 - step(0.57, 0.69, p))}`);
         stage.style.setProperty("--words-alpha", `${step(0.70, 0.88, p)}`);
         stage.style.setProperty("--words-rise", `${mix(18, 0, step(0.70, 0.88, p))}px`);
+        stage.style.setProperty("--score",`${p*100}%`);
+        range.current!.value=String(p*100);
 
         const phase = p < 0.29 ? 0 : p < 0.71 ? 1 : 2;
+        stage.dataset.phase=String(phase);
+        range.current!.setAttribute("aria-valuetext",score[phase].label);
         if (phase !== currentPhase) {
           controls.querySelectorAll("button").forEach((button, i) => {
             if (i === phase) button.setAttribute("aria-current", "step");
@@ -149,21 +157,16 @@ function StudyOpening({ piece }: { piece: Piece }) {
       };
       paintQueue.port1.onmessage = () => {
         if (!draw) return;
-        try {
-          const stop = performance.now() + 5;
-          do {
-            const part = draw.next();
-            if (part.done) {
-              if (part.value) stage.dataset.printed = "";
-              draw = null;
-              return;
-            }
-          } while (performance.now() < stop);
-          paintQueue.port2.postMessage(0);
-        } catch {
-          // A browser may deny pixel reads. Keep the original and camera intact.
-          draw = null;
-        }
+        const stop = performance.now() + 5;
+        do {
+          const part = draw.next();
+          if (part.done) {
+            if (part.value) stage.dataset.printed = "";
+            draw = null;
+            return;
+          }
+        } while (performance.now() < stop);
+        paintQueue.port2.postMessage(0);
       };
       const onLoad = () => {
         measure();
@@ -203,11 +206,11 @@ function StudyOpening({ piece }: { piece: Piece }) {
     };
   }, [study]);
 
-  const jump = (at: number) => {
+  const jump = (at: number, smooth=true) => {
     const section = root.current, stage = pin.current;
     if (!section || !stage || !section.hasAttribute("data-pinned")) return;
     const top = window.scrollY + section.getBoundingClientRect().top;
-    window.scrollTo({ top: top + at * (section.offsetHeight - stage.clientHeight), behavior: "smooth" });
+    window.scrollTo({ top: top + at * (section.offsetHeight - stage.clientHeight), behavior: smooth?"smooth":"instant" });
   };
   const props = {
     "--focus": `${study.subject[0] * 100}% ${study.subject[1] * 100}%`,
@@ -231,32 +234,38 @@ function StudyOpening({ piece }: { piece: Piece }) {
           </div>
           <div className={styles.shade} aria-hidden="true" />
           <div className={styles.title}>
-            <div className={styles.annotation}><i />Objet {study.number} / 05</div>
             <h1 id={titleId}>{piece.title}</h1>
             <p>{piece.subtitle}</p>
           </div>
-          <div className={styles.proof} aria-hidden="true" lang="fr">
+          {/* <div className={styles.proof} aria-hidden="true" lang="fr">
             <div className={styles.annotation}><i />Étude de matière</div>
             <p>{study.note}</p>
             <div className={styles.imprints}><i /><i /><i /><span>Pl. {study.number}</span></div>
-          </div>
+          </div> */}
         </div>
-        <div className={styles.words}>
+        {/* <div className={styles.words}>
           <div className={styles.annotation} lang="fr"><i />Détail <span>/</span> {piece.title}</div>
           <p className={styles.phrase}>{piece.description}</p>
           <p className={styles.detail}>{piece.detail}</p>
-        </div>
+        </div> */}
+        <button className={styles.scrollCue} aria-label="探索作品细节" title="探索作品细节" onClick={()=>jump(.51)}><ChevronDown size={22} strokeWidth={1}/></button>
+        <button className={styles.inspect} aria-label="查看原图" title="查看原图"
+          onClick={()=>setInspecting(image.current!.naturalWidth/image.current!.naturalHeight)}><Maximize2 size={19} strokeWidth={1}/></button>
+        <div className={styles.transport}>
+        <input ref={range} className={styles.scrubber} aria-label="观看进度" type="range" min="0" max="100" step=".1" defaultValue="0"
+          onChange={event=>jump(Number(event.target.value)/100,false)}/>
         <nav ref={nav} className={styles.stations} aria-label={`${piece.subtitle}的三个视图`}>
           {score.map((point, index) => (
             <button key={point.roman} type="button" onClick={() => jump(point.at)}
               aria-label={`${point.roman} · ${point.label}`} title={point.label}
               aria-current={index === 0 ? "step" : undefined}>
-              <span className={styles.tick} /><span className={styles.numeral}>{point.roman}</span>
-              <span className={styles.stationName} lang="fr">{point.name}</span>
+              <point.icon size={17} strokeWidth={1}/>
             </button>
           ))}
         </nav>
+        </div>
       </div>
+      {inspecting!==null&&<DetailViewer piece={piece} aspect={inspecting} onClose={()=>setInspecting(null)}/>}
     </section>
   );
 }
