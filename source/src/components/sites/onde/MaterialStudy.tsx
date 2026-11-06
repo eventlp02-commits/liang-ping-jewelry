@@ -12,7 +12,6 @@ type Study = {
   number: string;
   subject: Point;
   macro: Point;
-  zoom: number;
   inks: Pigments;
   note: string;
   alt: string;
@@ -22,28 +21,28 @@ type Study = {
 // Coordinates are registered on the uncropped originals, not on the viewport.
 const studies: Record<string, Study> = {
   lacune: {
-    number: "01", subject: [0.49, 0.46], macro: [0.49, 0.50], zoom: 1.85,
+    number: "01", subject: [0.49, 0.46], macro: [0.49, 0.50],
     inks: [[40, 47, 48], [150, 158, 153], [248, 245, 231]],
     note: "Ligne creuse", alt: "一枚不规则的银戒指，落在盛着乳白色液体的银勺里。",
   },
   liaison: {
-    number: "02", subject: [0.47, 0.51], macro: [0.29, 0.51], zoom: 2.05,
+    number: "02", subject: [0.47, 0.51], macro: [0.29, 0.51],
     inks: [[47, 47, 57], [161, 154, 151], [249, 246, 233]],
     note: "Points de liaison", alt: "银链与一列珍珠垂落在贴着银灰色胶带的白色纸面上。",
     lightGround: true,
   },
   galop: {
-    number: "03", subject: [0.53, 0.48], macro: [0.53, 0.48], zoom: 2.44,
+    number: "03", subject: [0.53, 0.48], macro: [0.53, 0.48],
     inks: [[67, 35, 32], [184, 109, 86], [249, 237, 213]],
     note: "Argent en relief", alt: "银色小马吊坠垂在巧克力和锡箔纸上，背景是浓烈的红色。",
   },
   signal: {
-    number: "04", subject: [0.56, 0.40], macro: [0.56, 0.39], zoom: 2.46,
+    number: "04", subject: [0.56, 0.40], macro: [0.56, 0.39],
     inks: [[46, 53, 47], [141, 151, 115], [242, 240, 218]],
     note: "Lignes de force", alt: "一只戴着棕色手套与银戒指的手握着老式电话听筒。",
   },
   pulse: {
-    number: "05", subject: [0.50, 0.66], macro: [0.51, 0.66], zoom: 2.12,
+    number: "05", subject: [0.50, 0.66], macro: [0.51, 0.66],
     inks: [[61, 40, 46], [169, 123, 121], [248, 237, 221]],
     note: "Trois fréquences", alt: "三道镶石手链绕在白色有线鼠标上，衬着暗红色桌面。",
   },
@@ -103,19 +102,23 @@ function StudyOpening({ piece }: { piece: Piece }) {
         const tight = w < 700 || w / h < 0.9;
         const studyIn = step(0.02, 0.53, p);
         const sweep = step(0.56, 0.90, p);
-        const z = 1 + studyIn * (tight ? 0.23 : 0.13)
-          + sweep * (study.zoom - 1 - (tight ? 0.23 : 0.13)) * (w / h > 2.3 ? 0.75 : 1);
-        const ratio = Math.max(w / photo.naturalWidth, h / photo.naturalHeight) * z;
         if (photo.naturalWidth && photo.naturalHeight) {
+          const fit = Math.min(
+            w * 0.78 / photo.naturalWidth,
+            h * (tight ? 0.69 : 0.72) / photo.naturalHeight,
+            1,
+          );
+          const fw = photo.naturalWidth * fit, fh = photo.naturalHeight * fit;
+          const ratio = Math.min(fit * (1 + studyIn * 0.025 + sweep * 0.075), 1);
           const pw = photo.naturalWidth * ratio, ph = photo.naturalHeight * ratio;
           const fx = mix(study.subject[0], study.macro[0], sweep);
           const fy = mix(study.subject[1], study.macro[1], sweep);
-          const targetX = mix(.51,.5,sweep);
-          const targetY = mix(tight ? .44 : .5,.46,sweep);
-          const x = clamp(w * targetX - pw * fx, w - pw, 0);
-          const y = clamp(h * targetY - ph * fy, h - ph, 0);
+          const x = clamp(fw * 0.5 - pw * fx, fw - pw, 0);
+          const y = clamp(fh * 0.5 - ph * fy, fh - ph, 0);
           // Keep both surfaces in exact register; only their common matrix moves.
           stage.style.setProperty("--camera", `matrix(${ratio},0,0,${ratio},${x},${y})`);
+          stage.style.setProperty("--frame-w", `${fw}px`);
+          stage.style.setProperty("--frame-h", `${fh}px`);
           stage.style.setProperty("--source-w", `${photo.naturalWidth}px`);
           stage.style.setProperty("--source-h", `${photo.naturalHeight}px`);
           stage.dataset.framed = "";
@@ -225,12 +228,13 @@ function StudyOpening({ piece }: { piece: Piece }) {
       data-light={study.lightGround ? "" : undefined}>
       <div ref={pin} className={styles.stage} data-material-stage="">
         <div className={styles.picture}>
-          {/* The same decoded local image is the accessible original and the print master. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.original} ref={image} src={piece.image} alt={study.alt}
-            fetchPriority="high" decoding="async" />
-          <div className={styles.print} aria-hidden="true">
-            <canvas className={styles.plate} ref={canvas} />
+          <div className={styles.frame}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className={styles.original} ref={image} src={piece.image} alt={study.alt}
+              fetchPriority="high" decoding="async" />
+            <div className={styles.print} aria-hidden="true">
+              <canvas className={styles.plate} ref={canvas} />
+            </div>
           </div>
           <div className={styles.shade} aria-hidden="true" />
           <div className={styles.title}>

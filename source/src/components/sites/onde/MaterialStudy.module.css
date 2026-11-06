@@ -10,10 +10,6 @@
   color: var(--photo-ink);
   background: var(--paper);
 }
-.score[data-light] {
-  --photo-ink: #242321;
-  --shadow-rgb: 249, 249, 246;
-}
 .score[data-pinned] { height: 275svh; }
 .stage { position: relative; }
 .score[data-pinned] .stage {
@@ -28,7 +24,17 @@
   isolation: isolate;
   overflow: hidden;
   height: 100svh;
-  background: var(--ground);
+  background: color-mix(in srgb, var(--ground) 20%, #191c1a);
+}
+.frame {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: var(--frame-w, 78%);
+  height: var(--frame-h, 69%);
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  isolation: isolate;
 }
 .original, .plate {
   position: absolute;
@@ -37,7 +43,7 @@
   height: 100%;
   max-width: none;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   object-position: var(--focus);
   transform-origin: 0 0;
 }
